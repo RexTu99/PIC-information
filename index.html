@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="format-detection" content="telephone=yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>保船一部船舶管理表（查詢版）</title>
+<style>
+/* ==================== Reset & Base ==================== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",PingFangTC,sans-serif;
+  background:var(--bg);color:var(--fg);
+  min-height:100vh;min-height:100dvh;
+  line-height:1.5;-webkit-font-smoothing:antialiased;
+  overscroll-behavior:contain;
+  padding-bottom:env(safe-area-inset-bottom);
+  padding-top:env(safe-area-inset-top);
+}
+button,input,select,textarea{font:inherit;color:inherit;background:none;border:none;outline:none}
+button{cursor:pointer;touch-action:manipulation}
+a{color:var(--link);text-decoration:none}
+ul{list-style:none}
+:root{
+  --bg:#f6f8fa;--surface:#fff;--surface-2:#f0f3f6;--fg:#1f2328;--fg-muted:#656d76;
+  --border:#d0d7de;--border-strong:#afb8c1;
+  --link:#0969da;--danger:#cf222e;--warn:#bf8700;--success:#1a7f37;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.06);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.12);
+  --radius:10px;--radius-sm:6px;--radius-lg:16px;
+  --chip-bg:#f0f3f6;--chip-bg-active:#0969da;--chip-fg-active:#fff;
+  --c-MT1:#1f6feb;--c-MT2:#2da44e;--c-MT3:#bf8700;--c-MT4:#cf222e;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0d1117;--surface:#161b22;--surface-2:#21262d;--fg:#e6edf3;--fg-muted:#8b949e;
+    --border:#30363d;--border-strong:#484f58;
+    --link:#4493f8;--danger:#f85149;--warn:#d29922;--success:#3fb950;
+    --shadow:0 1px 3px rgba(0,0,0,.3),0 4px 12px rgba(0,0,0,.2);
+    --shadow-lg:0 8px 32px rgba(0,0,0,.5);
+    --chip-bg:#21262d;--chip-bg-active:#1f6feb;--chip-fg-active:#fff;
+  }
+}
+
+/* ==================== Login ==================== */
+#login-screen{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;padding:24px;z-index:100;
+  background:linear-gradient(160deg,var(--bg) 0%,var(--surface-2) 100%);
+}
+#login-screen.hidden{display:none}
+.login-logo{font-size:48px;margin-bottom:12px}
+.login-title{font-size:22px;font-weight:700;text-align:center;margin-bottom:6px}
+.login-subtitle{font-size:13px;color:var(--fg-muted);margin-bottom:32px}
+.login-form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
+.login-input{
+  width:100%;height:52px;padding:0 16px;
+  border:1.5px solid var(--border);border-radius:var(--radius);
+  background:var(--surface);font-size:16px;
+  transition:border-color .15s;
+}
+.login-input:focus{border-color:var(--link)}
+.login-btn{
+  width:100%;height:52px;border-radius:var(--radius);
+  background:var(--link);color:#fff;font-size:16px;font-weight:600;
+  transition:opacity .15s,transform .1s;
+}
+.login-btn:active{transform:scale(.98);opacity:.9}
+.login-btn.secondary{background:var(--surface);color:var(--fg);border:1.5px solid var(--border)}
+.login-error{
+  padding:10px 14px;background:rgba(207,34,46,.1);color:var(--danger);
+  border-radius:var(--radius-sm);font-size:14px;text-align:center;
+  display:none;
+}
+.login-error.show{display:block}
+.login-hint{font-size:12px;color:var(--fg-muted);text-align:center;margin-top:20px;line-height:1.6}
+.login-mode{font-size:13px;color:var(--fg-muted);text-align:center;margin-top:8px}
+.login-mode button{
+  color:var(--link);background:none;padding:4px 8px;font-size:13px;
+  border-radius:4px;
+}
+.login-mode button:active{background:var(--surface-2)}
+
+/* ==================== App Shell ==================== */
+#app{display:none;min-height:100vh;min-height:100dvh;flex-direction:column}
+#app.show{display:flex}
+
+/* ==================== Top Bar ==================== */
+#top-bar{
+  position:sticky;top:0;z-index:20;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:10px 12px 8px;
+  padding-top:calc(10px + env(safe-area-inset-top));
+}
+.top-row{display:flex;align-items:center;gap:8px}
+.top-title{font-size:15px;font-weight:700;flex:0 0 auto}
+.top-title .small{font-size:11px;color:var(--fg-muted);font-weight:400}
+.top-actions{margin-left:auto;display:flex;gap:4px}
+.icon-btn{
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:var(--fg);
+}
+.icon-btn:active{background:var(--surface-2)}
+.icon-btn.admin-on{color:var(--warn)}
+.search-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.search-box{
+  position:relative;flex:1;
+}
+.search-box input{
+  width:100%;height:42px;padding:0 40px 0 38px;
+  border:1.5px solid var(--border);border-radius:var(--radius);
+  background:var(--surface-2);font-size:15px;
+}
+.search-box input:focus{border-color:var(--link);background:var(--surface)}
+.search-box::before{
+  content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  font-size:14px;opacity:.6;pointer-events:none;
+}
+.search-clear{
+  position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  width:32px;height:32px;border-radius:50%;display:none;
+  font-size:14px;color:var(--fg-muted);
+}
+.search-clear.show{display:flex;align-items:center;justify-content:center}
+.search-clear:active{background:var(--border)}
+
+/* ==================== Filter Bar ==================== */
+#filter-bar{
+  display:flex;gap:6px;overflow-x:auto;
+  padding:10px 12px;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+}
+#filter-bar::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;padding:7px 14px;
+  background:var(--chip-bg);border-radius:999px;
+  font-size:13px;font-weight:500;color:var(--fg);
+  border:1px solid transparent;
+  display:inline-flex;align-items:center;gap:4px;
+  white-space:nowrap;transition:all .15s;
+}
+.chip:active{transform:scale(.96)}
+.chip.active{background:var(--chip-bg-active);color:var(--chip-fg-active)}
+.chip .count{
+  display:inline-block;min-width:18px;height:18px;padding:0 5px;
+  background:rgba(0,0,0,.1);border-radius:9px;
+  font-size:11px;line-height:18px;text-align:center;font-weight:600;
+}
+.chip.active .count{background:rgba(255,255,255,.25)}
+.chip-select{
+  position:relative;
+}
+.chip-select::after{content:"▾";margin-left:2px;font-size:10px;opacity:.7}
+.chip-clear{color:var(--danger);background:transparent;border:1px dashed var(--border-strong)}
+
+.sub-filter{
+  padding:10px 12px;background:var(--surface-2);
+  border-bottom:1px solid var(--border);
+  display:none;
+}
+.sub-filter.show{display:block}
+.sub-filter-label{font-size:12px;color:var(--fg-muted);margin-bottom:6px;font-weight:600}
+.sub-filter-options{display:flex;flex-wrap:wrap;gap:6px}
+.sub-chip{
+  padding:5px 12px;background:var(--surface);border:1px solid var(--border);
+  border-radius:999px;font-size:12px;transition:all .15s;
+}
+.sub-chip.active{background:var(--link);color:#fff;border-color:var(--link)}
+
+/* ==================== Ship List ==================== */
+#ship-list{padding:10px 12px 80px;flex:1}
+.group-header{
+  display:flex;align-items:center;gap:8px;
+  margin:14px 4px 8px;font-size:13px;font-weight:700;
+}
+.group-header:first-child{margin-top:4px}
+.group-dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.group-header .count{color:var(--fg-muted);font-weight:500;font-size:12px}
+.group-header .sub-leader{margin-left:auto;font-size:11px;color:var(--fg-muted);font-weight:400}
+
+.ship-card{
+  position:relative;background:var(--surface);
+  border-radius:var(--radius);padding:12px 14px 12px 18px;
+  margin-bottom:8px;box-shadow:var(--shadow);
+  cursor:pointer;transition:transform .1s,box-shadow .15s;
+  overflow:hidden;
+}
+.ship-card:active{transform:scale(.99)}
+.ship-card::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--group-color,var(--border));
+}
+.card-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.card-code{font-size:13px;font-weight:700;color:var(--link);letter-spacing:.5px;font-family:"SF Mono",Menlo,Consolas,monospace}
+.card-zh{font-size:16px;font-weight:700}
+.card-en{font-size:12px;color:var(--fg-muted);font-weight:400}
+.card-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.tag{
+  display:inline-block;padding:2px 7px;
+  font-size:11px;border-radius:4px;
+  background:var(--surface-2);color:var(--fg-muted);
+  font-weight:500;
+}
+.tag.group{background:var(--group-color);color:#fff}
+.tag.class{background:rgba(9,105,218,.12);color:var(--link)}
+.tag.engine{background:rgba(191,135,0,.12);color:var(--warn)}
+.card-people{
+  margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);
+  display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;
+  font-size:12px;
+}
+.person-row{display:flex;align-items:center;gap:4px;min-width:0}
+.person-row .role{color:var(--fg-muted);flex:0 0 auto;font-size:11px}
+.person-row .name{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.person-row .ext{color:var(--link);font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px}
+
+#empty-state{
+  text-align:center;padding:60px 20px;color:var(--fg-muted);
+}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.5}
+
+/* ==================== Modal ==================== */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:50;opacity:0;pointer-events:none;
+  transition:opacity .2s;
+}
+.modal-backdrop.show{opacity:1;pointer-events:auto}
+
+.modal{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  background:var(--surface);
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+  max-height:90vh;max-height:90dvh;overflow-y:auto;
+  transform:translateY(100%);transition:transform .25s cubic-bezier(.3,.8,.3,1),visibility 0s .25s;
+  padding-bottom:calc(24px + env(safe-area-inset-bottom));
+  box-shadow:var(--shadow-lg);
+  visibility:hidden;pointer-events:none;
+}
+.modal.show{transform:translateY(0);visibility:visible;pointer-events:auto;transition:transform .25s cubic-bezier(.3,.8,.3,1),visibility 0s 0s}
+@media (min-width:700px){
+  .modal{
+    left:50%;right:auto;bottom:50%;
+    width:min(560px,92vw);
+    transform:translate(-50%,calc(50% + 40px));
+    border-radius:var(--radius-lg);
+  }
+  .modal.show{transform:translate(-50%,50%)}
+}
+.modal-handle{
+  width:36px;height:4px;background:var(--border);
+  border-radius:2px;margin:10px auto;
+}
+.modal-header{
+  display:flex;align-items:center;padding:0 16px 12px;
+  border-bottom:1px solid var(--border);
+}
+.modal-title{font-size:17px;font-weight:700;flex:1}
+.modal-close{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;color:var(--fg-muted);margin-right:-8px;
+}
+.modal-close:active{background:var(--surface-2)}
+.modal-body{padding:16px}
+.modal-footer-sticky{
+  position:sticky;bottom:0;left:0;right:0;
+  background:var(--surface);
+  padding:12px 16px;margin:16px -16px -16px;
+  border-top:1px solid var(--border);
+  display:flex;gap:8px;
+  padding-bottom:calc(12px + env(safe-area-inset-bottom));
+}
+.modal-footer-sticky button{
+  flex:1;height:46px;border-radius:var(--radius);
+  font-size:15px;font-weight:600;
+}
+
+/* Detail content */
+.detail-head{text-align:center;padding:8px 0 16px}
+.detail-code{font-size:13px;font-weight:700;color:var(--link);letter-spacing:1px;font-family:"SF Mono",Menlo,Consolas,monospace}
+.detail-zh{font-size:24px;font-weight:700;margin-top:4px}
+.detail-en{font-size:14px;color:var(--fg-muted);margin-top:2px}
+.detail-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
+.detail-tags .tag{padding:4px 10px;font-size:12px}
+
+.detail-section{margin-top:18px}
+.detail-section-title{
+  font-size:12px;font-weight:700;color:var(--fg-muted);
+  text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:8px;padding-left:4px;
+}
+.person-card{
+  background:var(--surface-2);border-radius:var(--radius-sm);
+  padding:12px 14px;margin-bottom:8px;
+  display:flex;align-items:center;gap:12px;
+}
+.person-avatar{
+  width:40px;height:40px;border-radius:50%;
+  background:var(--link);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:700;flex:0 0 auto;
+}
+.person-info{flex:1;min-width:0}
+.person-role{font-size:11px;color:var(--fg-muted);font-weight:600}
+.person-name{font-size:15px;font-weight:600;margin-top:1px}
+.person-ext{font-size:13px;color:var(--link);font-family:"SF Mono",Menlo,Consolas,monospace}
+.person-actions{display:flex;gap:6px;flex:0 0 auto}
+.action-btn{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+}
+.action-btn:active{background:var(--surface-2)}
+.action-btn.primary{background:var(--link);color:#fff;border-color:var(--link)}
+.person-missing{color:var(--fg-muted);font-style:italic;font-size:13px}
+
+.detail-actions{
+  margin-top:20px;padding-top:16px;
+  border-top:1px solid var(--border);
+  display:flex;gap:8px;
+}
+.detail-actions button{
+  flex:1;height:46px;border-radius:var(--radius);
+  font-size:14px;font-weight:600;
+}
+.btn-primary{background:var(--link);color:#fff}
+.btn-primary:active{opacity:.9}
+.btn-secondary{background:var(--surface-2);color:var(--fg);border:1px solid var(--border)}
+.btn-danger{background:rgba(207,34,46,.12);color:var(--danger)}
+
+/* Edit form */
+.form-row{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:600;color:var(--fg-muted);margin-bottom:4px;display:block}
+.form-label .required{color:var(--danger)}
+.form-input,.form-select{
+  width:100%;height:44px;padding:0 12px;
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface);font-size:15px;
+}
+.form-input:focus,.form-select:focus{border-color:var(--link)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%23656d76' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.form-row-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-hint{font-size:11px;color:var(--fg-muted);margin-top:4px}
+
+/* ==================== Toast ==================== */
+#toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(0,0,0,.85);color:#fff;
+  padding:10px 18px;border-radius:999px;
+  font-size:14px;z-index:100;
+  opacity:0;transition:all .25s;pointer-events:none;
+  max-width:90vw;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.error{background:var(--danger)}
+#toast.success{background:var(--success)}
+
+/* ==================== Utility ==================== */
+.mono{font-family:"SF Mono",Menlo,Consolas,monospace}
+.divider{height:1px;background:var(--border);margin:12px 0}
+kbd{
+  display:inline-block;padding:1px 6px;font-family:"SF Mono",Menlo,monospace;
+  font-size:11px;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:3px;
+}
+@media (min-width:900px){
+  #app{max-width:820px;margin:0 auto;box-shadow:0 0 40px rgba(0,0,0,.05)}
+}
+
+/* Print */
+@media print{
+  #top-bar,#filter-bar,.sub-filter{display:none!important}
+  .ship-card{box-shadow:none;border:1px solid var(--border);break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== LOGIN SCREEN ==================== -->
+<div id="login-screen">
+  <div class="login-logo">⚓</div>
+  <h1 class="login-title">保船一部船舶管理表</h1>
+  <div class="login-subtitle" id="login-subtitle">請輸入查詢密碼</div>
+  <form class="login-form" id="login-form" autocomplete="off">
+    <input type="password" class="login-input" id="login-password" placeholder="密碼" required autocomplete="current-password" inputmode="text">
+    <div class="login-error" id="login-error"></div>
+    <button type="submit" class="login-btn" id="login-submit">登入</button>
+  </form>
+</div>
+
+<!-- ==================== APP ==================== -->
+<div id="app">
+
+
+
+<!-- Top Bar -->
+<header id="top-bar">
+  <div class="top-row">
+    <div class="top-title">⚓ 船舶管理表 <span class="small" id="total-count"></span></div>
+    <div class="top-actions">
+      <button class="icon-btn" id="btn-supervisors" title="主管資訊">👤</button>
+      <button class="icon-btn" id="btn-logout" title="登出">⏻</button>
+    </div>
+  </div>
+  <div class="search-row">
+    <div class="search-box">
+      <input type="search" id="search-input" placeholder="搜尋船名、代碼、負責人…" inputmode="search" enterkeyhint="search" autocomplete="off">
+      <button type="button" class="search-clear" id="search-clear">✕</button>
+    </div>
+  </div>
+</header>
+
+<!-- Filter Bar -->
+<div id="filter-bar">
+  <button class="chip active" data-group="ALL">全部 <span class="count" id="count-ALL"></span></button>
+  <button class="chip" data-group="MT1">MT1 一課 <span class="count" id="count-MT1"></span></button>
+  <button class="chip" data-group="MT2">MT2 二課 <span class="count" id="count-MT2"></span></button>
+  <button class="chip" data-group="MT3">MT3 三課 <span class="count" id="count-MT3"></span></button>
+  <button class="chip" data-group="MT4">MT4 四課 <span class="count" id="count-MT4"></span></button>
+  <button class="chip chip-select" data-filter="shipType" id="filter-shipType">船型</button>
+  <button class="chip chip-select" data-filter="personMaint" id="filter-personMaint">保船</button>
+  <button class="chip chip-select" data-filter="personPurch" id="filter-personPurch">採購</button>
+  <button class="chip chip-select" data-filter="personTech" id="filter-personTech">海技</button>
+  <button class="chip chip-clear" id="filter-clear" style="display:none">清除</button>
+</div>
+
+<!-- Sub filter (expanded) -->
+<div class="sub-filter" id="sub-filter">
+  <div class="sub-filter-label" id="sub-filter-label"></div>
+  <div class="sub-filter-options" id="sub-filter-options"></div>
+</div>
+
+<!-- Ship List -->
+<main id="ship-list"></main>
+
+</div><!-- /#app -->
+
+<!-- Modal Backdrop -->
+<div class="modal-backdrop" id="modal-backdrop"></div>
+
+<!-- Detail Modal -->
+<div class="modal" id="detail-modal">
+  <div class="modal-handle"></div>
+  <div class="modal-header">
+    <div class="modal-title">船舶詳情</div>
+    <button class="modal-close" data-close-modal>✕</button>
+  </div>
+  <div class="modal-body" id="detail-body"></div>
+</div>
+
+<!-- Supervisors Modal -->
+<div class="modal" id="supervisors-modal">
+  <div class="modal-handle"></div>
+  <div class="modal-header">
+    <div class="modal-title">主管與副課長</div>
+    <button class="modal-close" data-close-modal>✕</button>
+  </div>
+  <div class="modal-body" id="supervisors-body"></div>
+</div>
+
+
+
+
+
+<!-- Toast -->
+<div id="toast"></div>
+
+
+
+<!-- ==================== DATA ==================== -->
+<script id="ship-data" type="application/json">{"meta": {"title": "保船一部船舶管理表", "version": "1.1.0", "lastUpdated": "2026-04-16", "source": "保船一部船舶管理表.xlsx"}, "supervisors": {"部主管": {"name": "歐枝全", "ext": "3777", "dept": "保船一部"}, "副部主管": {"name": "崔華宣", "ext": "3671", "dept": "保船一部"}, "課長": [{"name": "張安志", "ext": "3206"}, {"name": "鍾念家", "ext": "3751"}, {"name": "鄭宗華", "ext": "3924"}], "保船工程師": [{"name": "黃志偉", "ext": "3778", "title": "保船工程師(九)"}], "副課長": {"MT1": {"name": "蘇培彰", "ext": "3756"}, "MT2": {"name": "洪俊聖", "ext": "3915"}, "MT3": {"name": "杜建興", "ext": "5855"}, "MT4": {"name": "蔡百彥", "ext": "5845"}}}, "groups": [{"id": "MT1", "name": "保船一課", "subLeader": {"name": "蘇培彰", "ext": "3756"}, "color": "#1f6feb"}, {"id": "MT2", "name": "保船二課", "subLeader": {"name": "洪俊聖", "ext": "3915"}, "color": "#2da44e"}, {"id": "MT3", "name": "保船三課", "subLeader": {"name": "杜建興", "ext": "5855"}, "color": "#bf8700"}, {"id": "MT4", "name": "保船四課", "subLeader": {"name": "蔡百彥", "ext": "5845"}, "color": "#cf222e"}], "enums": {"classification": ["ABS", "CR+LR", "CR+NK", "LR", "NK"], "engineType": ["EGH", "EIT", "EMA", "EMC", "EMS", "EMU", "GMS", "N24", "N25", "PA"], "shipType": ["A", "AS", "B", "C", "E", "ES", "F", "G", "L", "M", "O", "P", "PX", "S", "T", "UX", "V", "W"]}, "staff": [{"id": "staff_001", "ext": "3794", "name": "詹揚策"}, {"id": "staff_002", "ext": "3239", "name": "袁傳薪"}, {"id": "staff_003", "ext": "3186", "name": "陳宏益"}, {"id": "staff_004", "ext": "3811", "name": "王廣"}, {"id": "staff_005", "ext": "5786", "name": "陳信榕"}, {"id": "staff_006", "ext": "3935", "name": "王群凱"}, {"id": "staff_007", "ext": "3779", "name": "許博傑"}, {"id": "staff_008", "ext": "3879", "name": "李福軒"}, {"id": "staff_009", "ext": "3910", "name": "姚勝薰"}, {"id": "staff_010", "ext": "3917", "name": "洪卿茹"}, {"id": "staff_011", "ext": "3938", "name": "鍾紹威"}, {"id": "staff_012", "ext": "3753", "name": "劉家進"}, {"id": "staff_013", "ext": "3974", "name": "游植鈞"}, {"id": "staff_014", "ext": "3880", "name": "郭楚勝"}, {"id": "staff_015", "ext": "5782", "name": "簡名成"}, {"id": "staff_016", "ext": "3720", "name": "康懷元"}, {"id": "staff_017", "ext": "3872", "name": "張富翔"}, {"id": "staff_018", "ext": "3742", "name": "劉坤祐"}, {"id": "staff_019", "ext": "3920", "name": "李易霖"}, {"id": "staff_020", "ext": "3930", "name": "黃宏奇"}, {"id": "staff_021", "ext": "3341", "name": "洪偉晟"}, {"id": "staff_022", "ext": "3933", "name": "吳泛濤"}, {"id": "staff_023", "ext": "3893", "name": "李齊"}, {"id": "staff_024", "ext": "5849", "name": "陳桂源"}, {"id": "staff_025", "ext": "3369", "name": "黃國豪"}, {"id": "staff_026", "ext": "3939", "name": "郭宗亷"}, {"id": "staff_027", "ext": "3881", "name": "林晋毅"}, {"id": "staff_028", "ext": "3918", "name": "吳明興"}, {"id": "staff_029", "ext": "3886", "name": "陳禹安"}, {"id": "staff_030", "ext": "3916", "name": "王治中"}, {"id": "staff_031", "ext": "3732", "name": "王振文"}, {"id": "staff_032", "ext": "3118", "name": "林原生"}, {"id": "staff_033", "ext": "3937", "name": "許昭笠"}, {"id": "staff_034", "ext": "3874", "name": "李亞倫"}, {"id": "staff_035", "ext": "3228", "name": "李懿俊"}, {"id": "staff_036", "ext": "3883", "name": "張育瑋"}, {"id": "staff_037", "ext": "3735", "name": "陳居廣"}, {"id": "staff_038", "ext": "3034", "name": "劉鳳吉"}, {"id": "staff_039", "ext": "3837", "name": "薛竣懌"}, {"id": "staff_040", "ext": "5796", "name": "戴成翰"}, {"id": "staff_041", "ext": "3104", "name": "陳勇慈"}, {"id": "staff_042", "ext": "3727", "name": "張逸平"}, {"id": "staff_043", "ext": "3974", "name": "楊道彬"}, {"id": "staff_044", "ext": "3708", "name": "傅馨儀"}, {"id": "staff_045", "ext": "3722", "name": "趙君榮"}, {"id": "staff_046", "ext": "5778", "name": "余臣豐"}, {"id": "staff_047", "ext": "3831", "name": "張書齊"}, {"id": "staff_048", "ext": "3128", "name": "黃啟瑞"}, {"id": "staff_049", "ext": "3913", "name": "鄭盛吉"}, {"id": "staff_050", "ext": "3929", "name": "吳哲維"}, {"id": "staff_051", "ext": "3957", "name": "楊盛奇"}, {"id": "staff_052", "ext": "3195", "name": "郭建宏"}, {"id": "staff_053", "ext": "3919", "name": "陳詔儒"}, {"id": "staff_054", "ext": "3743", "name": "鄭凱元"}, {"id": "staff_055", "ext": "3778", "name": "賴威瑲"}, {"id": "staff_056", "ext": "3730", "name": "林致宇"}], "ships": [{"id": "ship_MT1_01", "group": "MT1", "seq": 1, "code": "ACRD", "nameEn": "UNI-ACCORD", "nameZh": "立睦輪", "classification": "NK", "engineType": "EGH", "maintenancePic": "staff_001", "purchasingPic": "staff_002", "marineTech": "staff_003", "shipType": "AS"}, {"id": "ship_MT2_01", "group": "MT2", "seq": 1, "code": "BLIS", "nameEn": "EVER BLISS", "nameZh": "長喜輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_004", "purchasingPic": "staff_005", "marineTech": "staff_003", "shipType": "B"}, {"id": "ship_MT3_01", "group": "MT3", "seq": 1, "code": "ACES", "nameEn": "EVER ACE", "nameZh": "長範輪", "classification": "LR", "engineType": "PA", "maintenancePic": "staff_006", "purchasingPic": "staff_007", "marineTech": "staff_008", "shipType": "A"}, {"id": "ship_MT4_01", "group": "MT4", "seq": 1, "code": "LMBT", "nameEn": "EVER LAMBENT", "nameZh": "長華輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_009", "purchasingPic": "staff_010", "marineTech": "staff_011", "shipType": "L"}, {"id": "ship_MT1_02", "group": "MT1", "seq": 2, "code": "ACTV", "nameEn": "UNI-ACTIVE", "nameZh": "立沛輪", "classification": "CR+NK", "engineType": "EIT", "maintenancePic": "staff_012", "purchasingPic": "staff_002", "marineTech": "staff_008", "shipType": "AS"}, {"id": "ship_MT2_02", "group": "MT2", "seq": 2, "code": "BLMY", "nameEn": "EVER BALMY", "nameZh": "長芳輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_013", "purchasingPic": "staff_005", "marineTech": "staff_014", "shipType": "B"}, {"id": "ship_MT3_02", "group": "MT3", "seq": 2, "code": "ACTS", "nameEn": "EVER ACT", "nameZh": "長儀輪", "classification": "LR", "engineType": "PA", "maintenancePic": "staff_015", "purchasingPic": "staff_007", "marineTech": "staff_008", "shipType": "A"}, {"id": "ship_MT4_02", "group": "MT4", "seq": 2, "code": "LDEN", "nameEn": "EVER LADEN", "nameZh": "長滿輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_016", "purchasingPic": "staff_010", "marineTech": "staff_017", "shipType": "L"}, {"id": "ship_MT1_03", "group": "MT1", "seq": 3, "code": "ADRT", "nameEn": "UNI-ADROIT", "nameZh": "立敏輪", "classification": "CR+NK", "engineType": "EIT", "maintenancePic": "staff_018", "purchasingPic": "staff_002", "marineTech": "staff_008", "shipType": "AS"}, {"id": "ship_MT2_03", "group": "MT2", "seq": 3, "code": "BRTH", "nameEn": "EVER BIRTH", "nameZh": "長源輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_019", "purchasingPic": "staff_005", "marineTech": "staff_008", "shipType": "B"}, {"id": "ship_MT3_03", "group": "MT3", "seq": 3, "code": "AIMS", "nameEn": "EVER AIM", "nameZh": "長標輪", "classification": "NK", "engineType": "GMS", "maintenancePic": "staff_006", "purchasingPic": "staff_007", "marineTech": "staff_008", "shipType": "A"}, {"id": "ship_MT4_03", "group": "MT4", "seq": 3, "code": "LSTN", "nameEn": "EVER LASTING", "nameZh": "長久輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_020", "purchasingPic": "staff_010", "marineTech": "staff_011", "shipType": "L"}, {"id": "ship_MT1_04", "group": "MT1", "seq": 4, "code": "PERL", "nameEn": "EVER PEARL", "nameZh": "長珠輪", "classification": "NK", "engineType": "EMS", "maintenancePic": "staff_001", "purchasingPic": "staff_002", "marineTech": "staff_021", "shipType": "PX"}, {"id": "ship_MT2_04", "group": "MT2", "seq": 4, "code": "BASS", "nameEn": "EVER BASIS", "nameZh": "長本輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_022", "purchasingPic": "staff_005", "marineTech": "staff_023", "shipType": "B"}, {"id": "ship_MT3_04", "group": "MT3", "seq": 4, "code": "ALPS", "nameEn": "EVER ALP", "nameZh": "長岳輪", "classification": "NK", "engineType": "GMS", "maintenancePic": "staff_024", "purchasingPic": "staff_007", "marineTech": "staff_008", "shipType": "A"}, {"id": "ship_MT4_04", "group": "MT4", "seq": 4, "code": "LDIN", "nameEn": "EVER LEADING", "nameZh": "長成輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_025", "purchasingPic": "staff_010", "marineTech": "staff_011", "shipType": "L"}, {"id": "ship_MT1_05", "group": "MT1", "seq": 5, "code": "PFCT", "nameEn": "UNI-PERFECT", "nameZh": "立美輪", "classification": "NK", "engineType": "EGH", "maintenancePic": "staff_001", "purchasingPic": "staff_002", "marineTech": "staff_003", "shipType": "P"}, {"id": "ship_MT2_05", "group": "MT2", "seq": 5, "code": "BEDY", "nameEn": "EVER BEADY", "nameZh": "長明輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_019", "purchasingPic": "staff_005", "marineTech": "staff_014", "shipType": "B"}, {"id": "ship_MT3_05", "group": "MT3", "seq": 5, "code": "ARMS", "nameEn": "EVER ARM", "nameZh": "長為輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_026", "purchasingPic": "staff_007", "marineTech": "staff_027", "shipType": "A"}, {"id": "ship_MT4_05", "group": "MT4", "seq": 5, "code": "LAUL", "nameEn": "EVER LAUREL", "nameZh": "長冠輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_016", "purchasingPic": "staff_010", "marineTech": "staff_021", "shipType": "L"}, {"id": "ship_MT1_06", "group": "MT1", "seq": 6, "code": "PPLR", "nameEn": "UNI-POPULAR", "nameZh": "立行輪", "classification": "NK", "engineType": "EGH", "maintenancePic": "staff_018", "purchasingPic": "staff_002", "marineTech": "staff_003", "shipType": "P"}, {"id": "ship_MT2_06", "group": "MT2", "seq": 6, "code": "BEMY", "nameEn": "EVER BEAMY", "nameZh": "長弘輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_013", "purchasingPic": "staff_005", "marineTech": "staff_023", "shipType": "B"}, {"id": "ship_MT3_06", "group": "MT3", "seq": 6, "code": "ARTX", "nameEn": "EVER ART", "nameZh": "長彩輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_015", "purchasingPic": "staff_007", "marineTech": "staff_027", "shipType": "A"}, {"id": "ship_MT4_06", "group": "MT4", "seq": 6, "code": "LBRA", "nameEn": "EVER LIBRA", "nameZh": "長秤輪", "classification": "CR+LR", "engineType": "EMC", "maintenancePic": "staff_028", "purchasingPic": "staff_010", "marineTech": "staff_023", "shipType": "L"}, {"id": "ship_MT1_07", "group": "MT1", "seq": 7, "code": "PRBT", "nameEn": "UNI-PROBITY", "nameZh": "立誠輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_001", "purchasingPic": "staff_002", "marineTech": "staff_029", "shipType": "P"}, {"id": "ship_MT2_07", "group": "MT2", "seq": 7, "code": "BOMY", "nameEn": "EVER BOOMY", "nameZh": "長鵬輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_022", "purchasingPic": "staff_005", "marineTech": "staff_023", "shipType": "B"}, {"id": "ship_MT3_07", "group": "MT3", "seq": 7, "code": "ALOT", "nameEn": "EVER A LOT", "nameZh": "長益輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_026", "purchasingPic": "staff_005", "marineTech": "staff_027", "shipType": "A"}, {"id": "ship_MT4_07", "group": "MT4", "seq": 7, "code": "LWFL", "nameEn": "EVER LAWFUL", "nameZh": "長正輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_030", "purchasingPic": "staff_010", "marineTech": "staff_021", "shipType": "L"}, {"id": "ship_MT1_08", "group": "MT1", "seq": 8, "code": "PRDT", "nameEn": "UNI-PRUDENT", "nameZh": "立慎輪", "classification": "NK", "engineType": "EGH", "maintenancePic": "staff_031", "purchasingPic": "staff_002", "marineTech": "staff_029", "shipType": "P"}, {"id": "ship_MT2_08", "group": "MT2", "seq": 8, "code": "BLOM", "nameEn": "EVER BLOOM", "nameZh": "長泰輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_022", "purchasingPic": "staff_005", "marineTech": "staff_023", "shipType": "B"}, {"id": "ship_MT3_08", "group": "MT3", "seq": 8, "code": "APXE", "nameEn": "EVER APEX", "nameZh": "長穎輪", "classification": "LR", "engineType": "EMA", "maintenancePic": "staff_015", "purchasingPic": "staff_005", "marineTech": "staff_032", "shipType": "A"}, {"id": "ship_MT4_08", "group": "MT4", "seq": 8, "code": "LDER", "nameEn": "EVER LEADER", "nameZh": "長領輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_033", "purchasingPic": "staff_010", "marineTech": "staff_021", "shipType": "L"}, {"id": "ship_MT1_09", "group": "MT1", "seq": 9, "code": "PRID", "nameEn": "EVER PRIDE", "nameZh": "長尊輪", "classification": "NK", "engineType": "EMU", "maintenancePic": "staff_031", "purchasingPic": "staff_002", "marineTech": "staff_034", "shipType": "PX"}, {"id": "ship_MT2_09", "group": "MT2", "seq": 9, "code": "BRAC", "nameEn": "EVER BRACE", "nameZh": "長固輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_019", "purchasingPic": "staff_007", "marineTech": "staff_029", "shipType": "B"}, {"id": "ship_MT3_09", "group": "MT3", "seq": 9, "code": "ARIA", "nameEn": "EVER ARIA", "nameZh": "長韻輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_006", "purchasingPic": "staff_005", "marineTech": "staff_027", "shipType": "A"}, {"id": "ship_MT4_09", "group": "MT4", "seq": 9, "code": "LGCY", "nameEn": "EVER LEGACY", "nameZh": "長寶輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_025", "purchasingPic": "staff_010", "marineTech": "staff_021", "shipType": "L"}, {"id": "ship_MT1_10", "group": "MT1", "seq": 10, "code": "PRIM", "nameEn": "EVER PRIMA", "nameZh": "長首輪", "classification": "NK", "engineType": "EMU", "maintenancePic": "staff_018", "purchasingPic": "staff_002", "marineTech": "staff_034", "shipType": "PX"}, {"id": "ship_MT2_10", "group": "MT2", "seq": 10, "code": "BEFT", "nameEn": "EVER BEFIT", "nameZh": "長合輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_035", "purchasingPic": "staff_007", "marineTech": "staff_036", "shipType": "B"}, {"id": "ship_MT3_10", "group": "MT3", "seq": 10, "code": "ATOP", "nameEn": "EVER ATOP", "nameZh": "長皇輪", "classification": "LR", "engineType": "EMA", "maintenancePic": "staff_026", "purchasingPic": "staff_005", "marineTech": "staff_008", "shipType": "A"}, {"id": "ship_MT4_10", "group": "MT4", "seq": 10, "code": "LIVN", "nameEn": "EVER LIVEN", "nameZh": "長青輪", "classification": "CR+LR", "engineType": "EMC", "maintenancePic": "staff_016", "purchasingPic": "staff_010", "marineTech": "staff_014", "shipType": "L"}, {"id": "ship_MT1_11", "group": "MT1", "seq": 11, "code": "PRMR", "nameEn": "UNI-PREMIER", "nameZh": "立揆輪", "classification": "NK", "engineType": "EGH", "maintenancePic": "staff_031", "purchasingPic": "staff_002", "marineTech": "staff_003", "shipType": "P"}, {"id": "ship_MT2_11", "group": "MT2", "seq": 11, "code": "BRAV", "nameEn": "EVER BRAVE", "nameZh": "長佳輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_019", "purchasingPic": "staff_007", "marineTech": "staff_027", "shipType": "B"}, {"id": "ship_MT3_11", "group": "MT3", "seq": 11, "code": "ACME", "nameEn": "EVER ACME", "nameZh": "長崇輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_026", "purchasingPic": "staff_005", "marineTech": "staff_032", "shipType": "A"}, {"id": "ship_MT4_11", "group": "MT4", "seq": 11, "code": "LOGC", "nameEn": "EVER LOGIC", "nameZh": "長理輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_016", "purchasingPic": "staff_010", "marineTech": "staff_014", "shipType": "L"}, {"id": "ship_MT1_12", "group": "MT1", "seq": 12, "code": "PRMT", "nameEn": "UNI-PROMOTE", "nameZh": "立揚輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_037", "purchasingPic": "staff_002", "marineTech": "staff_029", "shipType": "P"}, {"id": "ship_MT2_12", "group": "MT2", "seq": 12, "code": "BENG", "nameEn": "EVER BEING", "nameZh": "長恆輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_013", "purchasingPic": "staff_007", "marineTech": "staff_036", "shipType": "B"}, {"id": "ship_MT3_12", "group": "MT3", "seq": 12, "code": "AEON", "nameEn": "EVER AEON", "nameZh": "長年輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_006", "purchasingPic": "staff_005", "marineTech": "staff_032", "shipType": "A"}, {"id": "ship_MT4_12", "group": "MT4", "seq": 12, "code": "LEGN", "nameEn": "EVER LEGEND", "nameZh": "長傳輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_020", "purchasingPic": "staff_010", "marineTech": "staff_032", "shipType": "L"}, {"id": "ship_MT1_13", "group": "MT1", "seq": 13, "code": "PRSP", "nameEn": "UNI-PROSPER", "nameZh": "立昌輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_012", "purchasingPic": "staff_002", "marineTech": "staff_029", "shipType": "P"}, {"id": "ship_MT2_13", "group": "MT2", "seq": 13, "code": "BRED", "nameEn": "EVER BREED", "nameZh": "長育輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_035", "purchasingPic": "staff_007", "marineTech": "staff_027", "shipType": "B"}, {"id": "ship_MT3_13", "group": "MT3", "seq": 13, "code": "ALYY", "nameEn": "EVER ALLY", "nameZh": "長友輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_038", "purchasingPic": "staff_005", "marineTech": "staff_027", "shipType": "A"}, {"id": "ship_MT4_13", "group": "MT4", "seq": 13, "code": "LERN", "nameEn": "EVER LEARNED", "nameZh": "長博輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_028", "purchasingPic": "staff_010", "marineTech": "staff_039", "shipType": "L"}, {"id": "ship_MT1_14", "group": "MT1", "seq": 14, "code": "ULYS", "nameEn": "EVER ULYSSES", "nameZh": "長祐輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_040", "purchasingPic": "staff_002", "marineTech": "staff_039", "shipType": "UX"}, {"id": "ship_MT2_14", "group": "MT2", "seq": 14, "code": "BORD", "nameEn": "EVER BOARD", "nameZh": "長卓輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_013", "purchasingPic": "staff_007", "marineTech": "staff_027", "shipType": "B"}, {"id": "ship_MT3_14", "group": "MT3", "seq": 14, "code": "FATH", "nameEn": "EVER FAITH", "nameZh": "長信輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_041", "purchasingPic": "staff_042", "marineTech": "staff_017", "shipType": "F"}, {"id": "ship_MT4_14", "group": "MT4", "seq": 14, "code": "LGON", "nameEn": "EVER LEGION", "nameZh": "長征輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_020", "purchasingPic": "staff_010", "marineTech": "staff_021", "shipType": "L"}, {"id": "ship_MT1_15", "group": "MT1", "seq": 15, "code": "UNCN", "nameEn": "EVER UNICORN", "nameZh": "長麒輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_037", "purchasingPic": "staff_002", "marineTech": "staff_039", "shipType": "UX"}, {"id": "ship_MT2_15", "group": "MT2", "seq": 15, "code": "BULD", "nameEn": "EVER BUILD", "nameZh": "長進輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_022", "purchasingPic": "staff_007", "marineTech": "staff_008", "shipType": "B"}, {"id": "ship_MT3_15", "group": "MT3", "seq": 15, "code": "FCUS", "nameEn": "EVER FOCUS", "nameZh": "長聚輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_041", "purchasingPic": "staff_042", "marineTech": "staff_017", "shipType": "F"}, {"id": "ship_MT4_15", "group": "MT4", "seq": 15, "code": "LTUS", "nameEn": "EVER LOTUS", "nameZh": "長蓮輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_030", "purchasingPic": "staff_010", "marineTech": "staff_017", "shipType": "L"}, {"id": "ship_MT1_16", "group": "MT1", "seq": 16, "code": "URBN", "nameEn": "EVER URBAN", "nameZh": "長都輪", "classification": "NK", "engineType": "GMS", "maintenancePic": "staff_040", "purchasingPic": "staff_002", "marineTech": "staff_003", "shipType": "UX"}, {"id": "ship_MT2_16", "group": "MT2", "seq": 16, "code": "BLES", "nameEn": "EVER BLESS", "nameZh": "長福輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_035", "purchasingPic": "staff_007", "marineTech": "staff_027", "shipType": "B"}, {"id": "ship_MT3_16", "group": "MT3", "seq": 16, "code": "FRNT", "nameEn": "EVER FRONT", "nameZh": "長鋒輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_015", "purchasingPic": "staff_042", "marineTech": "staff_017", "shipType": "F"}, {"id": "ship_MT4_16", "group": "MT4", "seq": 16, "code": "LIVY", "nameEn": "EVER LIVELY", "nameZh": "長茂輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_033", "purchasingPic": "staff_010", "marineTech": "staff_021", "shipType": "L"}, {"id": "ship_MT1_17", "group": "MT1", "seq": 17, "code": "USFL", "nameEn": "EVER USEFUL", "nameZh": "長宜輪", "classification": "NK", "engineType": "GMS", "maintenancePic": "staff_037", "purchasingPic": "staff_002", "marineTech": "staff_003", "shipType": "UX"}, {"id": "ship_MT2_17", "group": "MT2", "seq": 17, "code": "BRLY", "nameEn": "EVER BURLY", "nameZh": "長康輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_043", "purchasingPic": "staff_007", "marineTech": "staff_023", "shipType": "B"}, {"id": "ship_MT3_17", "group": "MT3", "seq": 17, "code": "FRWD", "nameEn": "EVER FORWARD", "nameZh": "長程輪", "classification": "LR", "engineType": "EMA", "maintenancePic": "staff_015", "purchasingPic": "staff_042", "marineTech": "staff_044", "shipType": "F"}, {"id": "ship_MT4_17", "group": "MT4", "seq": 17, "code": "LENT", "nameEn": "EVER LENIENT", "nameZh": "長慈輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_030", "purchasingPic": "staff_010", "marineTech": "staff_039", "shipType": "L"}, {"id": "ship_MT1_18", "group": "MT1", "seq": 18, "code": "UTLE", "nameEn": "EVER UTILE", "nameZh": "長實輪", "classification": "NK", "engineType": "GMS", "maintenancePic": "staff_040", "purchasingPic": "staff_002", "marineTech": "staff_036", "shipType": "UX"}, {"id": "ship_MT2_18", "group": "MT2", "seq": 18, "code": "BLNK", "nameEn": "EVER BLINK", "nameZh": "長晶輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_022", "purchasingPic": "staff_007", "marineTech": "staff_023", "shipType": "B"}, {"id": "ship_MT3_18", "group": "MT3", "seq": 18, "code": "FRTN", "nameEn": "EVER FORTUNE", "nameZh": "長裕輪", "classification": "LR", "engineType": "EMA", "maintenancePic": "staff_041", "purchasingPic": "staff_042", "marineTech": "staff_044", "shipType": "F"}, {"id": "ship_MT4_18", "group": "MT4", "seq": 18, "code": "LOYL", "nameEn": "EVER LOYAL", "nameZh": "長忠輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_028", "purchasingPic": "staff_010", "marineTech": "staff_014", "shipType": "L"}, {"id": "ship_MT1_19", "group": "MT1", "seq": 19, "code": "SUPB", "nameEn": "EVER SUPERB", "nameZh": "長偉輪", "classification": "NK", "engineType": "EMS", "maintenancePic": "staff_045", "purchasingPic": "staff_042", "marineTech": "staff_046", "shipType": "S"}, {"id": "ship_MT2_19", "group": "MT2", "seq": 19, "code": "CRTE", "nameEn": "EVER CREATE", "nameZh": "長新輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_047", "purchasingPic": "staff_002", "marineTech": "staff_029", "shipType": "C"}, {"id": "ship_MT3_19", "group": "MT3", "seq": 19, "code": "FRVR", "nameEn": "EVER FOREVER", "nameZh": "長永輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_048", "purchasingPic": "staff_042", "marineTech": "staff_017", "shipType": "F"}, {"id": "ship_MT4_19", "group": "MT4", "seq": 19, "code": "LBRL", "nameEn": "EVER LIBERAL", "nameZh": "長朗輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_030", "purchasingPic": "staff_010", "marineTech": "staff_011", "shipType": "L"}, {"id": "ship_MT1_20", "group": "MT1", "seq": 20, "code": "SGMA", "nameEn": "EVER SIGMA", "nameZh": "長企輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_037", "purchasingPic": "staff_042", "marineTech": "staff_011", "shipType": "S"}, {"id": "ship_MT2_20", "group": "MT2", "seq": 20, "code": "CONY", "nameEn": "EVER CONVEY", "nameZh": "長達輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_047", "purchasingPic": "staff_002", "marineTech": "staff_036", "shipType": "C"}, {"id": "ship_MT3_20", "group": "MT3", "seq": 20, "code": "FRNK", "nameEn": "EVER FRANK", "nameZh": "長誠輪", "classification": "LR", "engineType": "EMA", "maintenancePic": "staff_048", "purchasingPic": "staff_042", "marineTech": "staff_044", "shipType": "F"}, {"id": "ship_MT4_20", "group": "MT4", "seq": 20, "code": "LUKY", "nameEn": "EVER LUKY", "nameZh": "長幸輪", "classification": "ABS", "engineType": "GMS", "maintenancePic": "staff_009", "purchasingPic": "staff_010", "marineTech": "staff_017", "shipType": "L"}, {"id": "ship_MT1_21", "group": "MT1", "seq": 21, "code": "SINE", "nameEn": "EVER SHINE", "nameZh": "長照輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_049", "purchasingPic": "staff_042", "marineTech": "staff_011", "shipType": "S"}, {"id": "ship_MT2_21", "group": "MT2", "seq": 21, "code": "CRER", "nameEn": "EVER CAREER", "nameZh": "長馳輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_019", "purchasingPic": "staff_002", "marineTech": "staff_029", "shipType": "C"}, {"id": "ship_MT3_21", "group": "MT3", "seq": 21, "code": "FTUR", "nameEn": "EVER FUTURE", "nameZh": "長遠輪", "classification": "LR", "engineType": "EMA", "maintenancePic": "staff_026", "purchasingPic": "staff_042", "marineTech": "staff_044", "shipType": "F"}, {"id": "ship_MT4_21", "group": "MT4", "seq": 21, "code": "LVNG", "nameEn": "EVER LIVING", "nameZh": "長旺輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_028", "purchasingPic": "staff_010", "marineTech": "staff_046", "shipType": "L"}, {"id": "ship_MT1_22", "group": "MT1", "seq": 22, "code": "SMLE", "nameEn": "EVER SMILE", "nameZh": "長怡輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_049", "purchasingPic": "staff_042", "marineTech": "staff_011", "shipType": "S"}, {"id": "ship_MT2_22", "group": "MT2", "seq": 22, "code": "CHMP", "nameEn": "EVER CHAMP", "nameZh": "長桂輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_047", "purchasingPic": "staff_007", "marineTech": "staff_036", "shipType": "C"}, {"id": "ship_MT3_22", "group": "MT3", "seq": 22, "code": "MAXI", "nameEn": "EVER MAX", "nameZh": "長極輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_048", "purchasingPic": "staff_005", "marineTech": "staff_050", "shipType": "M"}, {"id": "ship_MT4_22", "group": "MT4", "seq": 22, "code": "LKIN", "nameEn": "EVER LINKING", "nameZh": "長連輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_009", "purchasingPic": "staff_010", "marineTech": "staff_039", "shipType": "L"}, {"id": "ship_MT1_23", "group": "MT1", "seq": 23, "code": "SMRT", "nameEn": "EVER SMART", "nameZh": "長慧輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_045", "purchasingPic": "staff_042", "marineTech": "staff_011", "shipType": "S"}, {"id": "ship_MT2_23", "group": "MT2", "seq": 23, "code": "CRTT", "nameEn": "EVER CHART", "nameZh": "長銘輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_047", "purchasingPic": "staff_002", "marineTech": "staff_036", "shipType": "C"}, {"id": "ship_MT3_23", "group": "MT3", "seq": 23, "code": "MACH", "nameEn": "EVER MACH", "nameZh": "長速輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_024", "purchasingPic": "staff_005", "marineTech": "staff_050", "shipType": "M"}, {"id": "ship_MT4_23", "group": "MT4", "seq": 23, "code": "LUCD", "nameEn": "EVER LUCID", "nameZh": "長輝輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_016", "purchasingPic": "staff_010", "marineTech": "staff_029", "shipType": "L"}, {"id": "ship_MT1_24", "group": "MT1", "seq": 24, "code": "STDY", "nameEn": "EVER STEADY", "nameZh": "長定輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_037", "purchasingPic": "staff_042", "marineTech": "staff_046", "shipType": "S"}, {"id": "ship_MT2_24", "group": "MT2", "seq": 24, "code": "EAGL", "nameEn": "EVER EAGLE", "nameZh": "長鷹輪", "classification": "ABS", "engineType": "EMU", "maintenancePic": "staff_004", "purchasingPic": "staff_042", "marineTech": "staff_034", "shipType": "ES"}, {"id": "ship_MT3_24", "group": "MT3", "seq": 24, "code": "MAGI", "nameEn": "EVER MAGI", "nameZh": "長賢輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_048", "purchasingPic": "staff_005", "marineTech": "staff_050", "shipType": "M"}, {"id": "ship_MT4_24", "group": "MT4", "seq": 24, "code": "LUCT", "nameEn": "EVER LUCENT", "nameZh": "長亮輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_033", "purchasingPic": "staff_010", "marineTech": "staff_046", "shipType": "L"}, {"id": "ship_MT1_25", "group": "MT1", "seq": 25, "code": "STRO", "nameEn": "EVER STRONG", "nameZh": "長強輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_049", "purchasingPic": "staff_042", "marineTech": "staff_046", "shipType": "S"}, {"id": "ship_MT2_25", "group": "MT2", "seq": 25, "code": "ELIT", "nameEn": "EVER ELITE", "nameZh": "長菁輪", "classification": "ABS", "engineType": "EMU", "maintenancePic": "staff_004", "purchasingPic": "staff_042", "marineTech": "staff_034", "shipType": "ES"}, {"id": "ship_MT3_25", "group": "MT3", "seq": 25, "code": "MASX", "nameEn": "EVER MASS", "nameZh": "長量輪", "classification": "LR", "engineType": "EMA", "maintenancePic": "staff_048", "purchasingPic": "staff_005", "marineTech": "staff_050", "shipType": "M"}, {"id": "ship_MT4_25", "group": "MT4", "seq": 25, "code": "LISM", "nameEn": "EVER LISSOME", "nameZh": "長通輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_009", "purchasingPic": "staff_010", "marineTech": "staff_011", "shipType": "L"}, {"id": "ship_MT1_26", "group": "MT1", "seq": 26, "code": "SUMM", "nameEn": "EVER SUMMIT", "nameZh": "長峰輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_049", "purchasingPic": "staff_042", "marineTech": "staff_046", "shipType": "S"}, {"id": "ship_MT2_26", "group": "MT2", "seq": 26, "code": "ENVY", "nameEn": "EVER ENVOY", "nameZh": "長欽輪", "classification": "ABS", "engineType": "EMU", "maintenancePic": "staff_004", "purchasingPic": "staff_042", "marineTech": "staff_034", "shipType": "ES"}, {"id": "ship_MT3_26", "group": "MT3", "seq": 26, "code": "MAST", "nameEn": "EVER MAST", "nameZh": "長杆輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_041", "purchasingPic": "staff_005", "marineTech": "staff_050", "shipType": "M"}, {"id": "ship_MT4_26", "group": "MT4", "seq": 26, "code": "LODG", "nameEn": "EVER LOADING", "nameZh": "長盛輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_020", "purchasingPic": "staff_010", "marineTech": "staff_034", "shipType": "L"}, {"id": "ship_MT1_27", "group": "MT1", "seq": 27, "code": "SFTY", "nameEn": "EVER SAFETY", "nameZh": "長安輪", "classification": "NK", "engineType": "EMS", "maintenancePic": "staff_045", "purchasingPic": "staff_042", "marineTech": "staff_046", "shipType": "S"}, {"id": "ship_MT2_27", "group": "MT2", "seq": 27, "code": "ETIC", "nameEn": "EVER ETHIC", "nameZh": "長德輪", "classification": "ABS", "engineType": "EMU", "maintenancePic": "staff_047", "purchasingPic": "staff_042", "marineTech": "staff_034", "shipType": "ES"}, {"id": "ship_MT3_27", "group": "MT3", "seq": 27, "code": "MEED", "nameEn": "EVER MEED", "nameZh": "長賞輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_024", "purchasingPic": "staff_005", "marineTech": "staff_050", "shipType": "M"}, {"id": "ship_MT4_27", "group": "MT4", "seq": 27, "code": "LUNR", "nameEn": "EVER LUNAR", "nameZh": "長月輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_033", "purchasingPic": "staff_010", "marineTech": "staff_023", "shipType": "L"}, {"id": "ship_MT1_28", "group": "MT1", "seq": 28, "code": "SALU", "nameEn": "EVER SALUTE", "nameZh": "長敬輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_045", "purchasingPic": "staff_042", "marineTech": "staff_046", "shipType": "S"}, {"id": "ship_MT2_28", "group": "MT2", "seq": 28, "code": "EXEL", "nameEn": "EVER EXCEL", "nameZh": "長傑輪", "classification": "ABS", "engineType": "EMU", "maintenancePic": "staff_004", "purchasingPic": "staff_042", "marineTech": "staff_034", "shipType": "ES"}, {"id": "ship_MT3_28", "group": "MT3", "seq": 28, "code": "MEGA", "nameEn": "EVER MEGA", "nameZh": "長兆輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_024", "purchasingPic": "staff_005", "marineTech": "staff_050", "shipType": "M"}, {"id": "ship_MT4_28", "group": "MT4", "seq": 28, "code": "LRIC", "nameEn": "EVER LYRIC", "nameZh": "長頌輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_028", "purchasingPic": "staff_010", "marineTech": "staff_017", "shipType": "L"}, {"id": "ship_MT1_29", "group": "MT1", "seq": 29, "code": "VIMM", "nameEn": "EVER VIM", "nameZh": "長朝輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_031", "purchasingPic": "staff_051", "marineTech": "staff_039", "shipType": "V"}, {"id": "ship_MT2_29", "group": "MT2", "seq": 29, "code": "EONS", "nameEn": "EVER EON", "nameZh": "長萬輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_052", "purchasingPic": "staff_005", "marineTech": null, "shipType": "E"}, {"id": "ship_MT3_29", "group": "MT3", "seq": 29, "code": "MEMO", "nameEn": "EVER MEMO", "nameZh": "長記輪", "classification": "LR", "engineType": "EMA", "maintenancePic": "staff_041", "purchasingPic": "staff_005", "marineTech": "staff_050", "shipType": "M"}, {"id": "ship_MT4_29", "group": "MT4", "seq": 29, "code": "LOVY", "nameEn": "EVER LOVELY", "nameZh": "長麗輪", "classification": "ABS", "engineType": "EMS", "maintenancePic": "staff_020", "purchasingPic": "staff_010", "marineTech": "staff_021", "shipType": "L"}, {"id": "ship_MT1_30", "group": "MT1", "seq": 30, "code": "VOWW", "nameEn": "EVER VOW", "nameZh": "長諾輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_012", "purchasingPic": "staff_051", "marineTech": "staff_053", "shipType": "V"}, {"id": "ship_MT2_30", "group": "MT2", "seq": 30, "code": "ECHO", "nameEn": "EVER ECHO", "nameZh": "長鳴輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_054", "purchasingPic": "staff_005", "marineTech": null, "shipType": "E"}, {"id": "ship_MT3_30", "group": "MT3", "seq": 30, "code": "MILD", "nameEn": "EVER MILD", "nameZh": "長親輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_055", "purchasingPic": "staff_005", "marineTech": "staff_053", "shipType": "M"}, {"id": "ship_MT4_30", "group": "MT4", "seq": 30, "code": "LFTG", "nameEn": "EVER LIFTING", "nameZh": "長昇輪", "classification": "LR", "engineType": "EMU", "maintenancePic": "staff_009", "purchasingPic": "staff_010", "marineTech": "staff_034", "shipType": "L"}, {"id": "ship_MT1_31", "group": "MT1", "seq": 31, "code": "VERR", "nameEn": "EVER VERA", "nameZh": "長篤輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_018", "purchasingPic": "staff_007", "marineTech": "staff_053", "shipType": "V"}, {"id": "ship_MT2_31", "group": "MT2", "seq": 31, "code": "TOPP", "nameEn": "EVER TOP", "nameZh": "長頂輪", "classification": "NK", "engineType": "GMS", "maintenancePic": "staff_052", "purchasingPic": "staff_042", "marineTech": "staff_008", "shipType": "T"}, {"id": "ship_MT3_31", "group": "MT3", "seq": 31, "code": "MODE", "nameEn": "EVER MODE", "nameZh": "長模輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_055", "purchasingPic": "staff_005", "marineTech": "staff_032", "shipType": "M"}, {"id": "ship_MT4_31", "group": "MT4", "seq": 31, "code": "OENT", "nameEn": "EVER ORIENT", "nameZh": "長旭輪", "classification": "NK", "engineType": "EGH", "maintenancePic": "staff_025", "purchasingPic": "staff_005", "marineTech": "staff_014", "shipType": "O"}, {"id": "ship_MT1_32", "group": "MT1", "seq": 32, "code": "VAST", "nameEn": "EVER VAST", "nameZh": "長闊輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_031", "purchasingPic": "staff_007", "marineTech": "staff_053", "shipType": "V"}, {"id": "ship_MT2_32", "group": "MT2", "seq": 32, "code": "WINN", "nameEn": "EVER WIN", "nameZh": "長上輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_035", "purchasingPic": "staff_005", "marineTech": "staff_036", "shipType": "W"}, {"id": "ship_MT3_32", "group": "MT3", "seq": 32, "code": "MRRC", "nameEn": "EVER MERCY", "nameZh": "長善輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_024", "purchasingPic": "staff_005", "marineTech": "staff_053", "shipType": "M"}, {"id": "ship_MT4_32", "group": "MT4", "seq": 32, "code": "OEAN", "nameEn": "EVER OCEAN", "nameZh": "長洋輪", "classification": "NK", "engineType": "EGH", "maintenancePic": "staff_030", "purchasingPic": "staff_005", "marineTech": "staff_003", "shipType": "O"}, {"id": "ship_MT1_33", "group": "MT1", "seq": 33, "code": "VIVA", "nameEn": "EVER VIVA", "nameZh": "長吉輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_012", "purchasingPic": "staff_051", "marineTech": "staff_053", "shipType": "V"}, {"id": "ship_MT2_33", "group": "MT2", "seq": 33, "code": "WEBB", "nameEn": "EVER WEB", "nameZh": "長絡輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_052", "purchasingPic": "staff_005", "marineTech": "staff_053", "shipType": "W"}, {"id": "ship_MT3_33", "group": "MT3", "seq": 33, "code": "MOST", "nameEn": "EVER MOST", "nameZh": "長鉅輪", "classification": "LR", "engineType": "EMA", "maintenancePic": "staff_055", "purchasingPic": "staff_005", "marineTech": "staff_053", "shipType": "M"}, {"id": "ship_MT4_33", "group": "MT4", "seq": 33, "code": "OASI", "nameEn": "EVER OASIS", "nameZh": "長澤輪", "classification": "NK", "engineType": "EGH", "maintenancePic": "staff_025", "purchasingPic": "staff_005", "marineTech": "staff_014", "shipType": "O"}, {"id": "ship_MT1_34", "group": "MT1", "seq": 34, "code": "VERT", "nameEn": "EVER VERT", "nameZh": "長碧輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_018", "purchasingPic": "staff_007", "marineTech": "staff_039", "shipType": "V"}, {"id": "ship_MT2_34", "group": "MT2", "seq": 34, "code": "WIZZ", "nameEn": "EVER WIZ", "nameZh": "長賦輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_052", "purchasingPic": "staff_005", "marineTech": "staff_039", "shipType": "W"}, {"id": "ship_MT3_34", "group": "MT3", "seq": 34, "code": "MUSE", "nameEn": "EVER MUSE", "nameZh": "長思輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_055", "purchasingPic": "staff_005", "marineTech": "staff_044", "shipType": "M"}, {"id": "ship_MT4_34", "group": "MT4", "seq": 34, "code": "ORDR", "nameEn": "EVER ORDER", "nameZh": "長順輪", "classification": "NK", "engineType": "EGH", "maintenancePic": "staff_025", "purchasingPic": "staff_007", "marineTech": "staff_014", "shipType": "O"}, {"id": "ship_MT1_35", "group": "MT1", "seq": 35, "code": "VIVE", "nameEn": "EVER VIVE", "nameZh": "長活輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_001", "purchasingPic": "staff_051", "marineTech": "staff_032", "shipType": "V"}, {"id": "ship_MT2_35", "group": "MT2", "seq": 35, "code": "WILL", "nameEn": "EVER WILL", "nameZh": "長毅輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_052", "purchasingPic": "staff_005", "marineTech": "staff_039", "shipType": "W"}, {"id": "ship_MT3_35", "group": "MT3", "seq": 35, "code": "MRCO", "nameEn": "EVER MARCO", "nameZh": "長宏輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_055", "purchasingPic": "staff_005", "marineTech": "staff_044", "shipType": "M"}, {"id": "ship_MT4_35", "group": "MT4", "seq": 35, "code": "GENS", "nameEn": "EVER GENIUS", "nameZh": "長智輪", "classification": "LR", "engineType": "EMA", "maintenancePic": "staff_056", "purchasingPic": "staff_005", "marineTech": null, "shipType": "G"}, {"id": "ship_MT1_36", "group": "MT1", "seq": 36, "code": "VRSE", "nameEn": "EVER VERSE", "nameZh": "長諧輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_040", "purchasingPic": "staff_051", "marineTech": null, "shipType": "V"}, {"id": "ship_MT2_36", "group": "MT2", "seq": 36, "code": "WISE", "nameEn": "EVER WISE", "nameZh": "長哲輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_052", "purchasingPic": "staff_005", "marineTech": "staff_036", "shipType": "W"}, {"id": "ship_MT3_36", "group": "MT3", "seq": 36, "code": "MGIC", "nameEn": "EVER MAGIC", "nameZh": "長奇輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_006", "purchasingPic": "staff_005", "marineTech": "staff_053", "shipType": "M"}, {"id": "ship_MT4_36", "group": "MT4", "seq": 36, "code": "GENT", "nameEn": "EVER GENTLE", "nameZh": "長雅輪", "classification": "", "engineType": "", "maintenancePic": "staff_056", "purchasingPic": "staff_005", "marineTech": null, "shipType": "G"}, {"id": "ship_MT1_37", "group": "MT1", "seq": 37, "code": "VRVE", "nameEn": "EVER VERVE", "nameZh": "長蘊輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_012", "purchasingPic": "staff_051", "marineTech": null, "shipType": "V"}, {"id": "ship_MT2_37", "group": "MT2", "seq": 37, "code": "WISH", "nameEn": "EVER WISH", "nameZh": "長願輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_022", "purchasingPic": "staff_005", "marineTech": "staff_032", "shipType": "W"}, {"id": "ship_MT3_37", "group": "MT3", "seq": 37, "code": "MGUS", "nameEn": "EVER MAGUS", "nameZh": "長宙輪", "classification": "LR", "engineType": "", "maintenancePic": "staff_038", "purchasingPic": "staff_005", "marineTech": "staff_044", "shipType": "M"}, {"id": "ship_MT4_37", "group": "MT4", "seq": 37, "code": "GFTD", "nameEn": "EVER GIFTED", "nameZh": "長俊輪", "classification": "NK", "engineType": "", "maintenancePic": "staff_033", "purchasingPic": "staff_005", "marineTech": null, "shipType": "G"}, {"id": "ship_MT1_38", "group": "MT1", "seq": 38, "code": "VSTA", "nameEn": "EVER VISTA", "nameZh": "長展輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_040", "purchasingPic": "staff_051", "marineTech": null, "shipType": "V"}, {"id": "ship_MT2_38", "group": "MT2", "seq": 38, "code": "WAFT", "nameEn": "EVER WAFT", "nameZh": "長流輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_043", "purchasingPic": "staff_005", "marineTech": "staff_032", "shipType": "W"}, {"id": "ship_MT3_38", "group": "MT3", "seq": 38, "code": "MTCH", "nameEn": "EVER MATCH", "nameZh": "長協輪", "classification": "NK", "engineType": "", "maintenancePic": "staff_055", "purchasingPic": "staff_005", "marineTech": null, "shipType": "M"}, {"id": "ship_MT4_38", "group": "MT4", "seq": 38, "code": "GREE", "nameEn": "EVER GREET", "nameZh": "長賀輪", "classification": "", "engineType": "", "maintenancePic": "staff_056", "purchasingPic": "staff_005", "marineTech": null, "shipType": "G"}, {"id": "ship_MT1_39", "group": "MT1", "seq": 39, "code": "VIBE", "nameEn": "EVER VIBE", "nameZh": "長氛輪", "classification": "NK", "engineType": "EMA", "maintenancePic": "staff_045", "purchasingPic": "staff_051", "marineTech": null, "shipType": "V"}, {"id": "ship_MT2_39", "group": "MT2", "seq": 39, "code": "WARM", "nameEn": "EVER WARM", "nameZh": "長溫輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_022", "purchasingPic": "staff_005", "marineTech": "staff_032", "shipType": "W"}, {"id": "ship_MT3_39", "group": "MT3", "seq": 39, "code": "MGNA", "nameEn": "EVER MAGNA", "nameZh": "長雄輪", "classification": "NK", "engineType": "", "maintenancePic": "staff_038", "purchasingPic": "staff_005", "marineTech": null, "shipType": "M"}, {"id": "ship_MT4_39", "group": "MT4", "seq": 39, "code": "GVRN", "nameEn": "EVER GOVERN", "nameZh": "長政輪", "classification": "", "engineType": "", "maintenancePic": "staff_056", "purchasingPic": "staff_005", "marineTech": null, "shipType": "G"}, {"id": "ship_MT2_40", "group": "MT2", "seq": 40, "code": "WORD", "nameEn": "EVER WORLD", "nameZh": "長世輪", "classification": "ABS", "engineType": "EMA", "maintenancePic": "staff_022", "purchasingPic": "staff_005", "marineTech": "staff_032", "shipType": "W"}, {"id": "ship_MT3_40", "group": "MT3", "seq": 40, "code": "MTAA", "nameEn": "EVER META", "nameZh": "長元輪", "classification": "ABS", "engineType": "", "maintenancePic": "staff_038", "purchasingPic": "staff_005", "marineTech": null, "shipType": "M"}, {"id": "ship_MT2_41", "group": "MT2", "seq": 41, "code": "COZY", "nameEn": "", "nameZh": "長適輪", "classification": "CR+NK", "engineType": "EMC", "maintenancePic": "staff_042", "purchasingPic": null, "marineTech": null, "shipType": "C"}, {"id": "ship_MT3_41", "group": "MT3", "seq": 41, "code": "MODL", "nameEn": "EVER MODEL", "nameZh": "長典輪", "classification": "ABS", "engineType": "", "maintenancePic": "staff_038", "purchasingPic": "staff_005", "marineTech": null, "shipType": "M"}], "auth": {"userPasswordHash": "df5f53064793740d3a22d16d26e2e28d3b357a95085076623efe9645d07f5cd8", "adminPasswordHash": "e66a4d090208cfaf76b855cc4b2aedd067bae71ae745be0b5be3ba4865057fc2", "salt": "bao-chuan-yi-2026"}}</script>
+
+<!-- ==================== RUNTIME-START (will be stripped on export) ==================== -->
+<script>
+(function(){
+'use strict';
+
+// ========== Utilities ==========
+const $  = (sel,el=document)=>el.querySelector(sel);
+const $$ = (sel,el=document)=>[...el.querySelectorAll(sel)];
+const ce = (tag,props={},...kids)=>{
+  const el=document.createElement(tag);
+  Object.entries(props).forEach(([k,v])=>{
+    if(k==='class') el.className=v;
+    else if(k==='dataset') Object.assign(el.dataset,v);
+    else if(k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(),v);
+    else if(k==='html') el.innerHTML=v;
+    else if(k in el) el[k]=v;
+    else el.setAttribute(k,v);
+  });
+  kids.flat().forEach(k=>{
+    if(k==null||k===false) return;
+    el.appendChild(typeof k==='string'?document.createTextNode(k):k);
+  });
+  return el;
+};
+
+async function sha256(text){
+  const buf = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function escapeHtml(s){
+  if(s==null) return '';
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function showToast(msg, type=''){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = '';
+  if(type) t.classList.add(type);
+  requestAnimationFrame(()=>t.classList.add('show'));
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function openModal(id){
+  $('#modal-backdrop').classList.add('show');
+  $('#'+id).classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function closeModals(){
+  $('#modal-backdrop').classList.remove('show');
+  $$('.modal.show').forEach(m=>m.classList.remove('show'));
+  document.body.style.overflow='';
+}
+
+// ========== State ==========
+const rawData = JSON.parse($('#ship-data').textContent);
+const state = {
+  data: structuredClone(rawData),
+  role: null,               // 'user' | 'admin' | null
+  search: '',
+  groupFilter: 'ALL',
+  subFilter: { type:null, value:null },
+  loginAttempts: 0,
+  loginLocked: 0,
+  currentShipId: null,
+  editingShipId: null,
+  dirty: false,             // any unsaved admin edits
+};
+
+
+// Staff lookup
+function staffMap(){
+  const m = {};
+  state.data.staff.forEach(s=>m[s.id]=s);
+  return m;
+}
+let _staffMap = staffMap();
+function refreshStaff(){ _staffMap = staffMap(); }
+function getStaff(id){ return id ? _staffMap[id] : null; }
+
+// ========== Login ==========
+async function checkPassword(input){
+  const salt = state.data.auth.salt || '';
+  const hash = await sha256(salt + input);
+  return hash === state.data.auth.userPasswordHash;
+}
+
+$('#login-form').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const err = $('#login-error');
+  err.classList.remove('show');
+
+  if(state.loginLocked > Date.now()){
+    const sec = Math.ceil((state.loginLocked - Date.now())/1000);
+    err.textContent = `嘗試次數過多，請 ${sec} 秒後再試`;
+    err.classList.add('show');
+    return;
+  }
+
+  const pw = $('#login-password').value;
+  if(!pw) return;
+
+  const ok = await checkPassword(pw);
+  if(ok){
+    state.role = 'user';
+    state.loginAttempts = 0;
+    sessionStorage.setItem('bcy-session', JSON.stringify({
+      role: state.role, exp: Date.now() + 8*3600*1000
+    }));
+    enterApp();
+  }else{
+    state.loginAttempts++;
+    if(state.loginAttempts >= 5){
+      state.loginLocked = Date.now() + 5*60*1000;
+      err.textContent = '嘗試 5 次失敗，鎖定 5 分鐘';
+      state.loginAttempts = 0;
+    }else if(state.loginAttempts >= 3){
+      state.loginLocked = Date.now() + 30*1000;
+      err.textContent = `密碼錯誤，鎖定 30 秒（剩餘 ${5-state.loginAttempts} 次）`;
+    }else{
+      err.textContent = `密碼錯誤（剩餘 ${5-state.loginAttempts} 次）`;
+    }
+    err.classList.add('show');
+    $('#login-password').value = '';
+    $('#login-password').focus();
+  }
+});
+
+function enterApp(){
+  $('#login-screen').classList.add('hidden');
+  $('#app').classList.add('show');
+  render();
+}
+
+function logout(){
+  sessionStorage.removeItem('bcy-session');
+  state.role = null;
+  $('#app').classList.remove('show');
+  $('#login-screen').classList.remove('hidden');
+  $('#login-password').value = '';
+}
+
+$('#btn-logout').addEventListener('click', ()=>{
+  logout();
+});
+
+// Restore session
+(function(){
+  try{
+    const s = JSON.parse(sessionStorage.getItem('bcy-session')||'null');
+    if(s && s.exp > Date.now()){
+      state.role = s.role;
+      enterApp();
+    }
+  }catch(e){}
+})();
+
+// ========== Search & Filter ==========
+const norm = s => (s||'').toString().toLowerCase().replace(/\s+/g,'');
+
+function matchSearch(ship, kw){
+  if(!kw) return true;
+  const k = norm(kw);
+  if(norm(ship.code).includes(k)) return true;
+  if(norm(ship.nameEn).includes(k)) return true;
+  if(norm(ship.nameZh).includes(k)) return true;
+  if(norm(ship.classification).includes(k)) return true;
+  if(norm(ship.engineType).includes(k)) return true;
+  // search staff
+  for(const sid of [ship.purchasingPic, ship.marineTech, ship.maintenancePic]){
+    const st = getStaff(sid);
+    if(st && (norm(st.name).includes(k) || norm(st.ext).includes(k))) return true;
+  }
+  return false;
+}
+
+function matchSubFilter(ship){
+  const f = state.subFilter;
+  if(!f.type || !f.value) return true;
+  if(f.type === 'shipType') return ship.shipType === f.value;
+  if(f.type === 'personMaint') return ship.maintenancePic === f.value;
+  if(f.type === 'personPurch') return ship.purchasingPic === f.value;
+  if(f.type === 'personTech') return ship.marineTech === f.value;
+  return true;
+}
+
+function getFilteredShips(){
+  return state.data.ships.filter(s => {
+    if(state.groupFilter !== 'ALL' && s.group !== state.groupFilter) return false;
+    if(!matchSearch(s, state.search)) return false;
+    if(!matchSubFilter(s)) return false;
+    return true;
+  });
+}
+
+$('#search-input').addEventListener('input', e=>{
+  state.search = e.target.value;
+  $('#search-clear').classList.toggle('show', !!state.search);
+  render();
+});
+$('#search-clear').addEventListener('click', ()=>{
+  $('#search-input').value = '';
+  state.search = '';
+  $('#search-clear').classList.remove('show');
+  render();
+  $('#search-input').focus();
+});
+
+$$('#filter-bar [data-group]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    state.groupFilter = btn.dataset.group;
+    $$('#filter-bar [data-group]').forEach(b=>b.classList.toggle('active', b===btn));
+    render();
+  });
+});
+
+$$('#filter-bar [data-filter]').forEach(btn=>{
+  btn.addEventListener('click', ()=>openSubFilter(btn.dataset.filter, btn));
+});
+
+function openSubFilter(type, btn){
+  const sf = $('#sub-filter');
+  const active = state.subFilter.type === type && sf.classList.contains('show');
+  if(active){ sf.classList.remove('show'); state.subFilter={type:null,value:null}; updateFilterChips(); render(); return; }
+
+  let options = [];
+  let label = '';
+  if(type === 'shipType'){
+    label = '選擇船型';
+    options = state.data.enums.shipType.map(v=>({value:v,label:v}));
+  }else if(type === 'personMaint' || type === 'personPurch' || type === 'personTech'){
+    const labelMap = {personMaint:'選擇保船 PIC',personPurch:'選擇採購 PIC',personTech:'選擇海技'};
+    const fieldMap = {personMaint:'maintenancePic',personPurch:'purchasingPic',personTech:'marineTech'};
+    label = labelMap[type];
+    const field = fieldMap[type];
+    const used = new Set();
+    state.data.ships.forEach(s=>{ if(s[field]) used.add(s[field]); });
+    options = state.data.staff
+      .filter(s=>used.has(s.id))
+      .sort((a,b)=>a.name.localeCompare(b.name,'zh-Hant'))
+      .map(s=>({value:s.id,label:`${s.name} (${s.ext})`}));
+  }
+
+  $('#sub-filter-label').textContent = label;
+  const box = $('#sub-filter-options');
+  box.innerHTML = '';
+  options.forEach(o=>{
+    const b = ce('button', {class:'sub-chip', type:'button', onclick:()=>{
+      if(state.subFilter.type===type && state.subFilter.value===o.value){
+        state.subFilter = {type:null, value:null};
+      }else{
+        state.subFilter = {type, value:o.value};
+      }
+      updateFilterChips();
+      render();
+      // refresh active marker
+      $$('.sub-chip',box).forEach(c=>c.classList.toggle('active', c.dataset.v===state.subFilter.value));
+    }}, o.label);
+    b.dataset.v = o.value;
+    if(state.subFilter.type===type && state.subFilter.value===o.value) b.classList.add('active');
+    box.appendChild(b);
+  });
+  sf.classList.add('show');
+}
+
+function updateFilterChips(){
+  const labels = {shipType:'船型',personMaint:'保船',personPurch:'採購',personTech:'海技'};
+  ['shipType','personMaint','personPurch','personTech'].forEach(t=>{
+    const chip = $(`#filter-bar [data-filter="${t}"]`);
+    if(!chip) return;
+    if(state.subFilter.type===t){
+      let txt = labels[t]+'：';
+      if(t.startsWith('person')){
+        const st = getStaff(state.subFilter.value);
+        txt += st?st.name:'';
+      }else txt += state.subFilter.value;
+      chip.innerHTML = escapeHtml(txt)+' <span style="font-size:10px">▾</span>';
+      chip.classList.add('active');
+    }else{
+      chip.textContent = labels[t];
+      chip.classList.remove('active');
+    }
+  });
+  const hasAny = state.subFilter.type || state.search || state.groupFilter!=='ALL';
+  $('#filter-clear').style.display = hasAny ? 'inline-flex' : 'none';
+}
+
+$('#filter-clear').addEventListener('click', ()=>{
+  state.search=''; $('#search-input').value=''; $('#search-clear').classList.remove('show');
+  state.groupFilter='ALL';
+  state.subFilter={type:null,value:null};
+  $('#sub-filter').classList.remove('show');
+  $$('#filter-bar [data-group]').forEach(b=>b.classList.toggle('active', b.dataset.group==='ALL'));
+  updateFilterChips();
+  render();
+});
+
+// ========== Render ==========
+function render(){
+  refreshStaff();
+  // Update counts
+  const counts = {ALL:0,MT1:0,MT2:0,MT3:0,MT4:0};
+  state.data.ships.forEach(s=>{ counts.ALL++; counts[s.group]=(counts[s.group]||0)+1 });
+  Object.entries(counts).forEach(([g,n])=>{
+    const el = $('#count-'+g); if(el) el.textContent = n;
+  });
+
+  const ships = getFilteredShips();
+  $('#total-count').textContent = `(${ships.length}/${state.data.ships.length})`;
+
+  updateFilterChips();
+
+  const list = $('#ship-list');
+  list.innerHTML = '';
+
+  if(ships.length === 0){
+    list.appendChild(ce('div',{id:'empty-state'},
+      ce('div',{class:'empty-icon'},'🔍'),
+      ce('div',{},'找不到符合條件的船舶'),
+      ce('div',{style:'font-size:12px;margin-top:8px'},'試試清除部分篩選條件')
+    ));
+    return;
+  }
+
+  if(state.groupFilter === 'ALL' && !state.search && !state.subFilter.type){
+    // Grouped display
+    state.data.groups.forEach(g=>{
+      const grpShips = ships.filter(s=>s.group===g.id).sort((a,b)=>a.seq-b.seq);
+      if(grpShips.length===0) return;
+      list.appendChild(ce('div',{class:'group-header', style:`--group-color:${g.color}`},
+        ce('span',{class:'group-dot',style:`background:${g.color}`}),
+        ce('span',{},`${g.id} · ${g.name}`),
+        ce('span',{class:'count'},`${grpShips.length} 艘`),
+        ce('span',{class:'sub-leader'},`副課長：${g.subLeader.name} (${g.subLeader.ext})`)
+      ));
+      grpShips.forEach(s=>list.appendChild(renderCard(s)));
+    });
+  }else{
+    ships.sort((a,b)=>{
+      if(a.group!==b.group) return a.group.localeCompare(b.group);
+      return a.seq-b.seq;
+    }).forEach(s=>list.appendChild(renderCard(s)));
+  }
+}
+
+function renderCard(ship){
+  const g = state.data.groups.find(x=>x.id===ship.group) || {color:'#888',name:''};
+  const pic = getStaff(ship.purchasingPic);
+  const tech = getStaff(ship.marineTech);
+  const maint = getStaff(ship.maintenancePic);
+
+  const card = ce('div',{class:'ship-card', style:`--group-color:${g.color}`, onclick:()=>showDetail(ship.id)});
+
+  const top = ce('div',{class:'card-top'},
+    ce('span',{class:'card-code'}, ship.code),
+    ce('span',{class:'card-zh'}, ship.nameZh || '(無中文名)'),
+    ship.nameEn ? ce('span',{class:'card-en'}, ship.nameEn) : null
+  );
+  card.appendChild(top);
+
+  const meta = ce('div',{class:'card-meta'},
+    ce('span',{class:'tag group', style:`background:${g.color}`}, `${ship.group}`),
+    ship.shipType ? ce('span',{class:'tag'}, ship.shipType) : null
+  );
+  card.appendChild(meta);
+
+  const ppl = ce('div',{class:'card-people'});
+  const mkRow = (role, st) => {
+    if(!st) return ce('div',{class:'person-row'}, ce('span',{class:'role'},role+'：'), ce('span',{class:'name',style:'color:var(--fg-muted);font-style:italic'},'—'));
+    return ce('div',{class:'person-row'},
+      ce('span',{class:'role'}, role+'：'),
+      ce('span',{class:'name'}, st.name),
+      ce('span',{class:'ext'}, st.ext)
+    );
+  };
+  ppl.appendChild(mkRow('保船', maint));
+  ppl.appendChild(mkRow('採購', pic));
+  ppl.appendChild(mkRow('海技', tech));
+  card.appendChild(ppl);
+
+  return card;
+}
+
+// ========== Detail ==========
+function showDetail(id){
+  const ship = state.data.ships.find(s=>s.id===id);
+  if(!ship) return;
+  state.currentShipId = id;
+  const g = state.data.groups.find(x=>x.id===ship.group) || {color:'#888',name:''};
+  const body = $('#detail-body');
+  body.innerHTML = '';
+
+  const head = ce('div',{class:'detail-head'},
+    ce('div',{class:'detail-code'}, ship.code),
+    ce('div',{class:'detail-zh'}, ship.nameZh || '(無中文名)'),
+    ship.nameEn ? ce('div',{class:'detail-en'}, ship.nameEn) : null,
+    ce('div',{class:'detail-tags'},
+      ce('span',{class:'tag group',style:`background:${g.color}`}, `${ship.group} · ${g.name} · 序號 ${ship.seq}`),
+      ship.shipType ? ce('span',{class:'tag'}, `船型 ${ship.shipType}`) : null
+    )
+  );
+  body.appendChild(head);
+
+  const sec = ce('div',{class:'detail-section'},
+    ce('div',{class:'detail-section-title'},'負責人'),
+    personCard('保船 PIC', getStaff(ship.maintenancePic), ship.group),
+    personCard('PIC 採購二課', getStaff(ship.purchasingPic), ship.group),
+    personCard('海技部', getStaff(ship.marineTech), ship.group)
+  );
+  body.appendChild(sec);
+
+  const gSec = ce('div',{class:'detail-section'},
+    ce('div',{class:'detail-section-title'},'課別資訊'),
+    ce('div',{class:'person-card'},
+      ce('div',{class:'person-avatar',style:`background:${g.color}`}, ship.group),
+      ce('div',{class:'person-info'},
+        ce('div',{class:'person-role'},'所屬課別'),
+        ce('div',{class:'person-name'}, g.name),
+        ce('div',{class:'person-ext'}, `副課長 ${g.subLeader.name} · 分機 ${g.subLeader.ext}`)
+      ),
+    )
+  );
+  body.appendChild(gSec);
+
+  const actions = ce('div',{class:'detail-actions'});
+  actions.appendChild(ce('button',{class:'btn-secondary', onclick:closeModals}, '關閉'));
+  body.appendChild(actions);
+
+  openModal('detail-modal');
+}
+
+function personCard(role, st, grpId){
+  if(!st){
+    return ce('div',{class:'person-card'},
+      ce('div',{class:'person-avatar', style:'background:var(--border);color:var(--fg-muted)'}, '—'),
+      ce('div',{class:'person-info'},
+        ce('div',{class:'person-role'}, role),
+        ce('div',{class:'person-missing'}, '未指派')
+      )
+    );
+  }
+  return ce('div',{class:'person-card'},
+    ce('div',{class:'person-avatar'}, st.name.slice(-1)),
+    ce('div',{class:'person-info'},
+      ce('div',{class:'person-role'}, role),
+      ce('div',{class:'person-name'}, st.name),
+      ce('div',{class:'person-ext'}, '分機 '+st.ext)
+    ),
+  );
+}
+
+// ========== Supervisors ==========
+$('#btn-supervisors').addEventListener('click', ()=>{
+  const sup = state.data.supervisors;
+  const body = $('#supervisors-body');
+  body.innerHTML = '';
+  const mkSup = (role, obj) => ce('div',{class:'person-card'},
+    ce('div',{class:'person-avatar'}, obj.name.slice(-1)),
+    ce('div',{class:'person-info'},
+      ce('div',{class:'person-role'}, role),
+      ce('div',{class:'person-name'}, obj.name),
+      ce('div',{class:'person-ext'}, '分機 '+obj.ext)
+    ),
+  );
+  body.appendChild(ce('div',{class:'detail-section-title'},'部主管'));
+  body.appendChild(mkSup('部主管', sup['部主管']));
+  body.appendChild(mkSup('副部主管', sup['副部主管']));
+  body.appendChild(ce('div',{class:'detail-section-title',style:'margin-top:14px'},'課長'));
+  sup['課長'].forEach(c=>body.appendChild(mkSup('課長', c)));
+  if(sup['保船工程師'] && sup['保船工程師'].length){
+    body.appendChild(ce('div',{class:'detail-section-title',style:'margin-top:14px'},'保船工程師'));
+    sup['保船工程師'].forEach(c=>body.appendChild(mkSup(c.title||'保船工程師', c)));
+  }
+  body.appendChild(ce('div',{class:'detail-section-title',style:'margin-top:14px'},'副課長 / 群組長'));
+  state.data.groups.forEach(g=>{
+    body.appendChild(mkSup(`${g.id} ${g.name} 副課長`, g.subLeader));
+  });
+  openModal('supervisors-modal');
+});
+
+// ========== Modal close events ==========
+$('#modal-backdrop').addEventListener('click', closeModals);
+$$('[data-close-modal]').forEach(b=>b.addEventListener('click', closeModals));
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') closeModals();
+  if(e.key==='/' && !e.target.matches('input,textarea')){
+    e.preventDefault(); $('#search-input').focus();
+  }
+});
+
+// Initial render if already logged in
+if(state.role){ render(); }
+
+})();
+</script>
+<!-- ==================== RUNTIME-END ==================== -->
+
+</body>
+</html>
