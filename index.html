@@ -980,6 +980,156 @@ $('#btn-supervisors').addEventListener('click', ()=>{
   openModal('supervisors-modal');
 });
 
+// ========== Manager Directory ==========
+$('#btn-mgr-dir').addEventListener('click', ()=>{
+  const body = $('#mgr-dir-body');
+  body.innerHTML = '';
+
+  const units = [
+    {key:'保二主管', label:'保二主管', cls:'unit-bao2',         icon:'⭐', color:'#bf8700'},
+    {key:'海技主管', label:'海技主管', cls:'unit-tech-mgr',     icon:'🌟', color:'#024999'},
+    {key:'補給主管', label:'補給主管', cls:'unit-supply-mgr',   icon:'🌟', color:'#7a3508'},
+    {key:'高保主管', label:'高保主管', cls:'unit-gaobao-mgr',   icon:'🌟', color:'#5a3a20'},
+    {key:'造船主管', label:'造船主管', cls:'unit-shipyard-mgr', icon:'🌟', color:'#7a2e58'},
+    {key:'外站',     label:'外站',     cls:'unit-foreign',      icon:'🟦', color:'#5a8aa0'},
+    {key:'專案組',   label:'專案組',   cls:'unit-project',      icon:'🟩', color:'#4a7d35'},
+  ];
+
+  let totalShown = 0;
+  units.forEach(u=>{
+    const list = state.data.staff
+      .filter(s=>s.unit === u.key)
+      .sort((a,b)=>(parseInt(a.ext)||9999) - (parseInt(b.ext)||9999));
+    if(list.length === 0) return;
+
+    body.appendChild(ce('div',{class:`unit-section ${u.cls}`},
+      ce('span',{}, `${u.icon} ${u.label}`),
+      ce('span',{class:'count'}, `${list.length} 人`)
+    ));
+
+    list.forEach(staff=>{
+      body.appendChild(ce('div',{class:'staff-card-compact'},
+        ce('div',{class:'head'},
+          ce('div',{class:'avatar', style:`background:${u.color}`}, staff.name.slice(-1)),
+          ce('div',{class:'info'},
+            ce('div',{class:'name'}, staff.name),
+            staff.ext ? ce('div',{class:'ext'}, '分機 '+staff.ext) : null,
+            staff.email ? ce('div',{class:'email'}, staff.email) : null
+          )
+        )
+      ));
+      totalShown++;
+    });
+  });
+
+  if(totalShown === 0){
+    body.appendChild(ce('div',{style:'text-align:center;padding:40px;color:var(--fg-muted)'},
+      '尚無主管 / 外站資料'));
+  }
+
+  openModal('mgr-dir-modal');
+});
+
+// ========== Staff Directory ==========
+$('#btn-staff-dir').addEventListener('click', ()=>{
+  const body = $('#staff-dir-body');
+  body.innerHTML = '';
+
+  const units = [
+    {key:'保船', label:'保船', cls:'unit-maint', icon:'🟢', color:'#2da44e'},
+    {key:'海技', label:'海技', cls:'unit-tech',  icon:'🔵', color:'#0969da'},
+    {key:'採購', label:'採購', cls:'unit-purch', icon:'🟣', color:'#8250df'},
+  ];
+
+  // Build ship-by-staff index
+  const shipsByStaff = {};
+  state.data.ships.forEach(sh=>{
+    [['maintenancePic','保船'],['purchasingPic','採購'],['marineTech','海技']].forEach(([f,role])=>{
+      const sid = sh[f];
+      if(sid){
+        if(!shipsByStaff[sid]) shipsByStaff[sid] = [];
+        shipsByStaff[sid].push({ship:sh, role});
+      }
+    });
+  });
+
+  // Render each unit
+  let totalShown = 0;
+  units.forEach(u=>{
+    const list = state.data.staff
+      .filter(s=>s.unit === u.key)
+      .sort((a,b)=>(parseInt(a.ext)||9999) - (parseInt(b.ext)||9999));
+    if(list.length === 0) return;
+
+    body.appendChild(ce('div',{class:`unit-section ${u.cls}`},
+      ce('span',{}, `${u.icon} ${u.label}`),
+      ce('span',{class:'count'}, `${list.length} 人`)
+    ));
+
+    list.forEach(staff=>{
+      const ships = (shipsByStaff[staff.id]||[]);
+      const card = ce('div',{class:'staff-card-compact'},
+        ce('div',{class:'head'},
+          ce('div',{class:'avatar', style:`background:${u.color}`}, staff.name.slice(-1)),
+          ce('div',{class:'info'},
+            ce('div',{class:'name'}, staff.name),
+            ce('div',{class:'ext'}, '分機 '+staff.ext),
+            staff.email ? ce('div',{class:'email'}, staff.email) : null
+          ),
+          ce('span',{class:'ship-count'}, ships.length+' 艘')
+        )
+      );
+      if(ships.length > 0){
+        const wrap = ce('div',{class:'staff-ships'});
+        ships.forEach(({ship})=>{
+          const g = state.data.groups.find(x=>x.id===ship.group);
+          const chip = ce('span',{
+            class:'ship-chip',
+            title:`${ship.code} ${ship.nameZh||''}`,
+            onclick:()=>{closeModals(); showDetail(ship.id);}
+          }, `${ship.group}·${ship.code}`);
+          if(g) chip.style.borderLeft = `3px solid ${g.color}`;
+          wrap.appendChild(chip);
+        });
+        card.appendChild(wrap);
+      }
+      body.appendChild(card);
+      totalShown++;
+    });
+  });
+
+  // Show staff with no unit assignment if any
+  const noUnit = state.data.staff.filter(s=>s.type==='pic' && (!s.unit || !['保船','海技','採購'].includes(s.unit)));
+  if(noUnit.length > 0){
+    body.appendChild(ce('div',{class:'unit-section unit-other'},
+      ce('span',{}, '⚪ 未分類'),
+      ce('span',{class:'count'}, `${noUnit.length} 人`)
+    ));
+    noUnit.forEach(staff=>{
+      const ships = (shipsByStaff[staff.id]||[]);
+      body.appendChild(ce('div',{class:'staff-card-compact'},
+        ce('div',{class:'head'},
+          ce('div',{class:'avatar', style:'background:#8b949e'}, staff.name.slice(-1)),
+          ce('div',{class:'info'},
+            ce('div',{class:'name'}, staff.name),
+            ce('div',{class:'ext'}, '分機 '+staff.ext),
+            staff.email ? ce('div',{class:'email'}, staff.email) : null
+          ),
+          ce('span',{class:'ship-count'}, ships.length+' 艘')
+        )
+      ));
+    });
+  }
+
+  if(totalShown === 0 && noUnit.length === 0){
+    body.appendChild(ce('div',{style:'text-align:center;padding:40px;color:var(--fg-muted)'},
+      '尚無員工資料'));
+  }
+
+  openModal('staff-dir-modal');
+});
+
+
 // ========== Modal close events ==========
 $('#modal-backdrop').addEventListener('click', closeModals);
 $$('[data-close-modal]').forEach(b=>b.addEventListener('click', closeModals));
